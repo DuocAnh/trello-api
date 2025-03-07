@@ -1,4 +1,5 @@
-import { StatusCodes } from 'http-status-codes'
+import { BAD_GATEWAY, StatusCodes } from 'http-status-codes'
+import ApiError from '~/utils/ApiError'
 
 const createNew = async (req, res, next) => {
   try {
@@ -11,12 +12,11 @@ const createNew = async (req, res, next) => {
 
     // Điều hướng dữ liệu sang tầng service
 
+    // throw new ApiError(StatusCodes.BAD_GATEWAY, 'test error')
     // Có kết quả thì trả về client
     res.status(StatusCodes.CREATED).json({ message: 'POST from controller API create new board' })
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      errors: error.message
-    })
+    next(error)
   }
 }
 
