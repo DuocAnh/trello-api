@@ -7,7 +7,7 @@ import JWT from 'jsonwebtoken'
  * secretSignature: Chữ ký bí mật (dạng một chuỗi string ngẫu nhiên) trên docs thì để tên là privateKey tùy đều được
  * tokenLife: Thời gian sống của token
  */
-const gennerateToken = async (userInfo, secretSignature, tokenLife) => {
+const generateToken = async (userInfo, secretSignature, tokenLife) => {
   try {
     return JWT.sign(userInfo, secretSignature, { algorithm: 'HS256', expiresIn: tokenLife })
   } catch (error) {
@@ -28,6 +28,6 @@ const verifyToken = async (token, secretSignature) => {
 }
 
 export const JwtProvider = {
-  gennerateToken,
+  generateToken,
   verifyToken
 }

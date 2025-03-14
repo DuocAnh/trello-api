@@ -56,12 +56,12 @@ const verifyAccount = async (reqBody) => {
     // Các bước kiểm tra cần thiết
     if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found!')
     if (existUser.isActive) throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Your account is already active!')
-    if (reqBody.token !== existUser.verifyAccount) {
+    if (reqBody.token !== existUser.verifyToken) {
       throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'Token invalid!')
     }
 
     const updateData = {
-      isAcitve: true,
+      isActive: true,
       verifyToken: null
     }
 
@@ -90,13 +90,14 @@ const login = async (reqBody) => {
       email: existUser.email
     }
     // Tạo ra 2 loại token
-    const accessToken = await JwtProvider.genderateToken(
+    const accessToken = await JwtProvider.generateToken(
       userInfo,
       env.ACCESS_TOKEN_SECRET_SIGNATURE,
-      env.ACCESS_TOKEN_LIFE
+      5
+      // env.ACCESS_TOKEN_LIFE
     )
 
-    const refreshToken = await JwtProvider.genderateToken(
+    const refreshToken = await JwtProvider.generateToken(
       userInfo,
       env.REFRESH_TOKEN_SECRET_SIGNATURE,
       env.REFRESH_TOKEN_LIFE
