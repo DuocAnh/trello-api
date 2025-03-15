@@ -8,6 +8,7 @@ import { WEBSITE_DOMAIN } from '~/utils/constants'
 import { BrevoProvider } from '~/providers/BrevoProvider'
 import { env } from '~/config/environment'
 import { JwtProvider } from '~/providers/JwtProvider'
+import { CloudinaryProvider } from '~/providers/cloudinaryProvider'
 
 const createNew = async (reqBody) => {
   try {
@@ -139,7 +140,7 @@ const refreshToken = async (clientRefreshToken) => {
   }
 }
 
-const update = async (userId, reqBody) => {
+const update = async (userId, reqBody, userAvatarFile) => {
   try {
     // Query User và kiểm tra cho chắc chắn
     const existUser = await userModel.findOneById(userId)
@@ -158,6 +159,15 @@ const update = async (userId, reqBody) => {
       // Nếu như current password đúng thì hash password mới và update db
       updatedUser = await userModel.update(existUser._id, {
         password: bcryptjs.hashSync(reqBody.new_password, 8)
+      })
+    } else if (userAvatarFile) {
+      // Trường hợp upload file lên cloud storage, cụ thể là cloudinary
+      const uploadResult = await CloudinaryProvider.streamUpload(userAvatarFile.buffer, 'users')
+      console.log('uploadResult: ', uploadResult)
+
+      // Lưu lại URL của file ảnh vào trong db
+      updatedUser = await userModel.update(existUser._id, {
+        avatar: uploadResult.secure_url
       })
     } else {
       // Trường hợp update thông tin khác
