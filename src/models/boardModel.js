@@ -5,6 +5,7 @@ import { ObjectId } from 'mongodb'
 import { BOARD_TYPES } from '~/utils/constants'
 import { columnModel } from './columnModel'
 import { cardModel } from './cardModel'
+import { pagingSkipValue } from '~/utils/algorithms'
 
 // Define Collection (name & schema)
 const BOARD_COLLECTION_NAME = 'boards'
@@ -15,6 +16,15 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
   type: Joi.string().valid(BOARD_TYPES.PUBLIC, BOARD_TYPES.PRIVATE).required(),
 
   columnOrderIds: Joi.array().items(
+    Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
+  ).default([]),
+
+  // Những admin board
+  ownerIds: Joi.array().items(
+    Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
+  ).default([]),
+  // Những member board
+  memberIds: Joi.array().items(
     Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
   ).default([]),
 
@@ -139,6 +149,51 @@ const pullColumnOrderIds = async (column) => {
   }
 }
 
+const getBoards = async (userId, page, itemsPerPage) => {
+  try {
+    const queryCondition = [
+      // Dk1: board chưa bị xóa
+      { _destroy: false },
+      // Dk2: userId đang thực hiện request phải thuộc ownerIds hoặc memberIds, sử dụng toán tử $all của mongodb
+      { $or: [
+        { ownerIds: { $all: [new ObjectId(userId)] } },
+        { memberIds: { $all: [new ObjectId(userId)] } }
+      ] }
+    ]
+
+    const query = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate(
+      [
+        { $match: { $and: queryCondition } },
+        // Sort A-Z sort ASCII
+        { $sort: { title: 1 } },
+        // $facet xử lý nhiều luồng trong 1 query
+        { $facet: {
+          // Luồng 1: query boards
+          'queryBoards': [
+            { $skip: pagingSkipValue(page, itemsPerPage) }, // Bỏ qua số lượng bản ghi của những page trước đó
+            { $limit: itemsPerPage } // Giới hạn tối đa số lượng bản ghi trả về trên 1 page
+          ],
+          // Luồng 2: query đếm tổng tất cả số lượng bản ghi board trong db
+          'queryTotalBoards': [{ $count: 'countedAllBoards' }]
+        } }
+      ],
+      // Khai báo thêm thuộc tính collation locale: 'en' để fix chữ B hoa và a thường ở trên
+      // https://www.mongodb.com/docs/v6.0/reference/collation/#std-label-collation-document-fields
+      { collation: { locale: 'en' } }
+    ).toArray()
+    // console.log('query: ', query)
+
+    const res = query[0]
+
+    return {
+      boards: res.queryBoards || [],
+      queryTotalBoards: res.queryTotalBoards[0]?.countedAllBoards || 0
+    }
+
+  } catch (error) {
+    throw new Error(error)
+  }
+}
 
 export const boardModel = {
   BOARD_COLLECTION_NAME,
@@ -148,5 +203,6 @@ export const boardModel = {
   getDetails,
   pushColumnOrderIds,
   update,
-  pullColumnOrderIds
+  pullColumnOrderIds,
+  getBoards
 }
