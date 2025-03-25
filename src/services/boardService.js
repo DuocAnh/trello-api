@@ -8,7 +8,7 @@ import { columnModel } from '~/models/columnModel'
 import { cardModel } from '~/models/cardModel'
 import { DEFAULT_PAGE, DEFAULT_ITEMS_PER_PAGE } from '~/utils/constants'
 
-const createNew = async (reqBody) => {
+const createNew = async (userId, reqBody) => {
   try {
     // Xử lý logic dữ liệu
     const newBoard = {
@@ -17,7 +17,7 @@ const createNew = async (reqBody) => {
     }
 
     // Model
-    const createBoard = await boardModel.createNew(newBoard)
+    const createBoard = await boardModel.createNew(userId, newBoard)
     // console.log(createBoard)
 
     // Lấy bản ghi board sau khi gọi
@@ -30,9 +30,9 @@ const createNew = async (reqBody) => {
   }
 }
 
-const getDetails = async (boardId) => {
+const getDetails = async (userId, boardId) => {
   try {
-    const board = await boardModel.getDetails(boardId)
+    const board = await boardModel.getDetails(userId, boardId)
     if (!board) throw new ApiError(StatusCodes.NOT_FOUND, 'Board not found')
 
     // cloneDeep tạo ra cái mới để xử lý, không ảnh hưởng đến board ban đầu

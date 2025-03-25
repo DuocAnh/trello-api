@@ -40,10 +40,14 @@ const validateBeforeCreate = async (data) => {
   return await BOARD_COLLECTION_SCHEMA.validateAsync(data, { abortEarly: false })
 }
 
-const createNew = async (data) => {
+const createNew = async (userId, data) => {
   try {
     const valiData = await validateBeforeCreate(data)
-    const createBoard = await GET_DB().collection(BOARD_COLLECTION_NAME).insertOne(valiData)
+    const newBoardToAdd = {
+      ...valiData,
+      ownerIds: [new ObjectId(userId)]
+    }
+    const createBoard = await GET_DB().collection(BOARD_COLLECTION_NAME).insertOne(newBoardToAdd)
 
     return createBoard
   } catch (error) {
@@ -63,17 +67,22 @@ const findOneById = async (id) => {
   }
 }
 
-const getDetails = async (id) => {
+const getDetails = async (userId, boardId) => {
   try {
     // const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOne({
     //   _id: new ObjectId(id)
     // })
+    const queryCondition = [
+      { _id: new ObjectId(boardId) },
+      { _destroy: false },
+      { $or: [
+        { ownerIds: { $all: [new ObjectId(userId)] } },
+        { memberIds: { $all: [new ObjectId(userId)] } }
+      ] }
+    ]
 
     const result = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate([
-      { $match: {
-        _id: new ObjectId(id),
-        _destroy: false
-      } },
+      { $match: { $and: queryCondition } },
       { $lookup: {
         from: columnModel.COLUMN_COLLECTION_NAME,
         localField: '_id',
@@ -179,7 +188,7 @@ const getBoards = async (userId, page, itemsPerPage) => {
       ],
       // Khai báo thêm thuộc tính collation locale: 'en' để fix chữ B hoa và a thường ở trên
       // https://www.mongodb.com/docs/v6.0/reference/collation/#std-label-collation-document-fields
-      { collation: { locale: 'en' } }
+      { collation: { locale: 'en', numericOrdering: true } }
     ).toArray()
     // console.log('query: ', query)
 
@@ -187,7 +196,7 @@ const getBoards = async (userId, page, itemsPerPage) => {
 
     return {
       boards: res.queryBoards || [],
-      queryTotalBoards: res.queryTotalBoards[0]?.countedAllBoards || 0
+      totalBoards: res.queryTotalBoards[0]?.countedAllBoards || 0
     }
 
   } catch (error) {
