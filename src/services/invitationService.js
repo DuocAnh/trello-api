@@ -49,6 +49,28 @@ const createNewBoardInvitation = async (reqBody, inviterId) => {
   }
 }
 
+const getInvitations = async (userId) => {
+  try {
+    const getInvitations = await invitationModel.findByUser(userId)
+    console.log('getInvitations', getInvitations)
+
+    // Vì các dữ liệu inviter, invitee và board là đang ở giá trị mảng 1 phần tử nếu lấy ra được nên chúng ta biến đổi nó về Json Object trước khi trả về cho phía be
+    const resInvitations = getInvitations.map(i => {
+      return {
+        ...i,
+        inviter: i.inviter[0] || {},
+        invitee: i.invitee[0] || {},
+        board: i.board[0] || {}
+      }
+    })
+
+    return resInvitations
+  } catch (error) {
+    throw error
+  }
+}
+
 export const invitationService = {
-  createNewBoardInvitation
+  createNewBoardInvitation,
+  getInvitations
 }
