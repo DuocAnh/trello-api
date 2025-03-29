@@ -179,7 +179,7 @@ const pullColumnOrderIds = async (column) => {
   }
 }
 
-const getBoards = async (userId, page, itemsPerPage) => {
+const getBoards = async (userId, page, itemsPerPage, queryFilter) => {
   try {
     const queryCondition = [
       // Dk1: board chưa bị xóa
@@ -190,6 +190,16 @@ const getBoards = async (userId, page, itemsPerPage) => {
         { memberIds: { $all: [new ObjectId(userId)] } }
       ] }
     ]
+
+    // Xử lý query filter cho từng trường hợp search board
+    if (queryFilter) {
+      Object.keys(queryFilter).forEach(key => {
+        // queryCondition.push({ [key]: { $regex: queryFilter[key] } })
+
+        // Tìm kiếm không phân biệt chữ hoa thường
+        queryCondition.push({ [key]: { $regex: new RegExp(queryFilter[key], 'i') } })
+      })
+    }
 
     const query = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate(
       [
