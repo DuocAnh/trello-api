@@ -84,7 +84,7 @@ const updateBoardInvitation = async (userId, invitationId, status) => {
     // Kiểm tra xem nếu status là ACCEPTED join board mà cái thằng user (invitee) đã là owner hoặc member của board rồi thì trả về thông báo lỗi luôn.
     // Note: 2 mảng memberIds và ownerIds của board nó đang là kiểu dữ liệu ObjectId nên cho nó về String hết luôn để check
     const boardOwnerAndMemberIds = [...getBoard.ownerIds, ...getBoard.memberIds].toString()
-    console.log(boardOwnerAndMemberIds)
+    // console.log(boardOwnerAndMemberIds)
     if (status === BOARD_INVITATION_STATUS.ACCEPTED && boardOwnerAndMemberIds.includes(userId)) {
       throw new ApiError(StatusCodes.NOT_ACCEPTABLE, 'You already a number of thí board')
     }
